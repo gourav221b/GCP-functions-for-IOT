@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Command Publisher</title>
+</head>
+
+<body>
+    <h1>Speak a command</h1>
+    <button id="recordBtn">Start Recording</button>
+    <p>Say "jump twice," "move right," or "move left."</p>
+    <p id="status">Status: Idle</p>
+
+    <script>
+        const API_ENDPOINT = "wss://us-central1-truxtsaas-dev.cloudfunctions.net/process-voice-command";
+        const recordBtn = document.getElementById('recordBtn');
+        const statusEl = document.getElementById('status');
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+
+        recognition.continuous = false;
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recordBtn.onclick = () => {
+            statusEl.textContent = "Status: Listening...";
+            recognition.start();
+        };
+
+        recognition.onresult = (event) => {
+            const commandText = event.results[0][0].transcript;
+            statusEl.textContent = "Status: Sending...";
+            console.log('Recognized:', commandText);
+            sendCommand(commandText);
+        };
+
+        recognition.onerror = (event) => {
+            statusEl.textContent = `Status: Error - ${event.error}`;
+        };
+
+        async function sendCommand(commandText) {
+            try {
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command_text: commandText })
+                });
+                const result = await response.json();
+                statusEl.textContent = `Status: Commands sent: ${result.commands.join(', ')}`;
+            } catch (error) {
+                statusEl.textContent = `Status: Failed to send - ${error}`;
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+
+</html>

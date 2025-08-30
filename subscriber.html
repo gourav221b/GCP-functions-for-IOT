@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rectangle Subscriber</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: sans-serif;
+        }
+
+        #rectangle {
+            width: 100px;
+            height: 100px;
+            background-color: blue;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Rectangle Receiver</h1>
+    <p>Watch this rectangle move based on your voice commands.</p>
+    <div id="rectangle"></div>
+    <p id="status">Status: Connecting to backend...</p>
+
+    <script>
+        const WEBSOCKET_URL = "wss://ws-subscriber-837558670111.us-central1.run.app";
+        const rectangle = document.getElementById('rectangle');
+        const statusEl = document.getElementById('status');
+        const ws = new WebSocket(WEBSOCKET_URL);
+        const MOVE_AMOUNT = 50;
+        let x = 0;
+        let y = 0;
+
+        ws.onopen = () => {
+            statusEl.textContent = "Status: Connected. Ready to receive commands.";
+            console.log("WebSocket connection opened.");
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                const command = message.command;
+                console.log("Received command:", command);
+                executeCommand(command);
+            } catch (e) {
+                console.error("Failed to parse message:", e);
+            }
+        };
+
+        ws.onclose = () => {
+            statusEl.textContent = "Status: Disconnected. Check the backend service.";
+            console.log("WebSocket connection closed.");
+        };
+
+        function executeCommand(command) {
+            switch (command) {
+                case 'up': y -= MOVE_AMOUNT; break;
+                case 'down': y += MOVE_AMOUNT; break;
+                case 'left': x -= MOVE_AMOUNT; break;
+                case 'right': x += MOVE_AMOUNT; break;
+                default: console.log("Unknown command:", command);
+            }
+            rectangle.style.transform = `translate(${x}px, ${y}px)`;
+        }
+    </script>
+</body>
+
+</html>
